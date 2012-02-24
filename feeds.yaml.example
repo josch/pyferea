@@ -1,0 +1,87 @@
+http://blog.fefe.de/rss.xml?html:
+  category: "general news"
+  loadlink: False
+http://www.lawblog.de/index.php/feed/:
+  category: "general news"
+  loadlink: False
+http://feeds.feedburner.com/theatlantic/infocus:
+  category: "general news"
+  loadlink: False
+http://feeds.boston.com/boston/bigpicture/index:
+  category: "general news"
+  loadlink: False
+http://neusprech.org/feed/:
+  category: "general news"
+  loadlink: False
+http://planet.debian.org/rss20.xml:
+  category: "IT news"
+  loadlink: False
+http://www.debian-administration.org/atom.xml:
+  category: "IT news"
+  loadlink: False
+http://www.engadget.com/exclude/Apple/rss.xml:
+  category: "IT news"
+  loadlink: False
+http://www.heise.de/newsticker/heise-atom.xml:
+  category: "IT news"
+  loadlink: True
+http://slashdot.org/slashdot.rss:
+  category: "IT news"
+  loadlink: True
+https://netzpolitik.org/feed/:
+  category: "IT news"
+  loadlink: False
+http://www.unknown-horizons.org/feed:
+  category: "IT news"
+  loadlink: True
+http://www.raspberrypi.org/?feed=rss2:
+  category: "IT news"
+  loadlink: False
+http://www.rockpapershotgun.com/feed/:
+  category: "IT news"
+  loadlink: True
+http://freegamer.blogspot.com/feeds/posts/default?alt=rss:
+  category: "IT news"
+  loadlink: False
+http://feed.dilbert.com/dilbert/daily_strip:
+  category: "comic"
+  loadlink: False
+http://www.smbc-comics.com/rss.php:
+  category: "comic"
+  loadlink: False
+http://feeds.feedburner.com/Explosm:
+  category: "comic"
+  loadlink: True
+http://xkcd.com/rss.xml:
+  category: "comic"
+  loadlink: False
+http://www.questionablecontent.net/QCRSS.xml:
+  category: "comic"
+  loadlink: False
+http://www.rsspect.com/rss/gunner.xml:
+  category: "comic"
+  loadlink: True
+http://www.giantitp.com/comics/oots.rss:
+  category: "comic"
+  loadlink: True
+http://guildedage.net/feed/:
+  category: "comic"
+  loadlink: True
+http://www.nichtlustig.de/rss/nichtrss.rss:
+  category: "comic"
+  loadlink: False
+http://www.notquitewrong.com/rosscottinc/feed/:
+  category: "comic"
+  loadlink: False
+http://www.darthsanddroids.net/rss.xml:
+  category: "comic"
+  loadlink: False
+http://www.phdcomics.com/gradfeed_justcomics.php:
+  category: "comic"
+  loadlink: True
+http://9gag.com/rss/site/feed.rss:
+  category: "comic"
+  loadlink: False
+http://endlessorigami.com/?feed=rss2:
+  category: "comic"
+  loadlink: False
