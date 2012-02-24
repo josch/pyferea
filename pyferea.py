@@ -95,9 +95,7 @@ def markup_escape_text(text):
     """
     if not text:
         return ""
-    #passing -1 will let strlen() figure out the byte length of the null
-    #terminated string and avoids problems with multibyte characters
-    return GLib.markup_escape_text(text, -1)
+    return GLib.markup_escape_text(text.encode('utf-8'))
 
 class TabLabel(Gtk.HBox):
     """A class for Tab labels"""
@@ -932,7 +930,7 @@ class FeedReaderWindow(Gtk.Window):
             if feedtree.updating: return True
             feedtree.update_feed_all()
             return True
-        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3600, timeout_cb, None)
+        GLib.timeout_add_seconds(3600, timeout_cb, None)
 
         button_refresh = Gtk.Button()
         button_refresh.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_REFRESH, Gtk.IconSize.MENU))
