@@ -12,7 +12,7 @@ Quick Start
 
 Create a feeds.yaml (you can copy feeds.yaml.example) and then run:
 
-$ python pyferea.py
+	$ python pyferea.py
 
 Naming
 ======
@@ -31,8 +31,17 @@ no sane RSS feed reader out there that would please me. I did not think that I
 would require much. Just three panes for feeds, entries and content, keeping
 record of unread entries and rendering content in a browser. Liferea came close
 but was poisoned by feature bloat (as many others... especially gnome
-dependencies) and major slowness. Pyferea does just what I want, is simple, DE
-agnostic (uses python and gtk) and fits in about 1000 lines of code.
+dependencies) and major slowness. On top of that it created a new feed entry
+everytime I accidentally drag&drop something. I call all of those bugs and they
+never got fixed. Pyferea does just what I want, is simple, DE agnostic (uses
+python and gtk) and fits in about 1000 lines of code.
+
+Pyferea is for you if you want:
+
+ - an offline feed reader
+ - no gnome, KDE, mono dependencies
+ - no rss reader as a browser plugin
+ - not terminal based, hence webbrowser for rendering
 
 Bugs
 ====
@@ -46,6 +55,23 @@ it. If anybody feels inclined to do so, then patches are welcome.
 
 Dependencies
 ============
+
+	apt-get install python-gobject python-yaml python-lxml python-feedparser gir1.2-webkit-3.0
+
+As of February 2012, the dependency size of the following feed readers in a
+fresh Debian Sid minimal chroot:
+
+	pyferea: 172MB
+	liferea: 225MB
+	gpodder: 226MB
+	blam: 408MB
+	akregator: 758MB
+
+Keyboard shortcuts
+==================
+
+To make it faster to switch between the three panes and scroll in them, use the
+keys 1, 2 and 3 to select the first, second or third pane respectively.
 
 feeds.yaml
 ==========
@@ -76,3 +102,12 @@ ythtml5.js
 A javascript that I load upon each pageload to convert youtube videos into
 their html5 versions so that the webkit plugin can render them even withoutme
 having flash.
+
+Possible future work
+====================
+
+(patches welcome)
+
+ - build debian package
+ - add hooks to load custom javascript/css for feeds
+ - i18n
