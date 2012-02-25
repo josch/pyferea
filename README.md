@@ -111,3 +111,5 @@ Possible future work
  - build debian package
  - add hooks to load custom javascript/css for feeds
  - i18n
+ - downloading
+ - list of unread items
