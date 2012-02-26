@@ -113,3 +113,4 @@ Possible future work
  - i18n
  - downloading
  - list of unread items
+ - make re-sorting fast
