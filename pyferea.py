@@ -146,7 +146,8 @@ class TabLabel(Gtk.HBox):
 class ContentPane (Gtk.Notebook):
 
     __gsignals__ = {
-        "focus-view-title-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_OBJECT, GObject.TYPE_STRING,))
+        "focus-view-title-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_OBJECT, GObject.TYPE_STRING,)),
+        "progress-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_FLOAT,))
         }
 
     def __init__ (self):
@@ -268,6 +269,10 @@ class ContentPane (Gtk.Notebook):
             label.set_label(title)
             self.emit("focus-view-title-changed", frame, title)
         web_view.connect("title-changed", _title_changed_cb)
+
+        def _progress_changed_cb(view, progress):
+            self.emit("progress-changed", view.get_progress())
+        web_view.connect("notify::progress", _progress_changed_cb)
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.props.hscrollbar_policy = Gtk.PolicyType.AUTOMATIC
@@ -391,6 +396,9 @@ class WebToolbar(Gtk.Toolbar):
 
     def location_set_text (self, text):
         self._entry.set_text(text)
+
+    def location_set_progress(self, progress):
+        self._entry.set_progress_fraction(progress%1)
 
 
 class EntryTree(Gtk.TreeView):
@@ -889,6 +897,10 @@ class FeedReaderWindow(Gtk.Window):
             if uri:
                 toolbar.location_set_text(uri)
         content_pane.connect("focus-view-title-changed", title_changed_cb)
+
+        def progress_changed_cb(pane, progress):
+            toolbar.location_set_progress(progress)
+        content_pane.connect("progress-changed", progress_changed_cb)
 
         entries = EntryTree(config, feeddb)
 
