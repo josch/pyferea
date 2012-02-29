@@ -147,7 +147,8 @@ class ContentPane (Gtk.Notebook):
 
     __gsignals__ = {
         "focus-view-title-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_OBJECT, GObject.TYPE_STRING,)),
-        "progress-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_FLOAT,))
+        "progress-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_FLOAT,)),
+        "hover-link-changed": (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_STRING,))
         }
 
     def __init__ (self):
@@ -228,6 +229,8 @@ class ContentPane (Gtk.Notebook):
 
         def _hovering_over_link_cb (view, title, uri):
             self._hovered_uri = uri
+            self.emit("hover-link-changed", uri)
+
         web_view.connect("hovering-over-link", _hovering_over_link_cb)
 
         def _populate_page_popup_cb(view, menu):
@@ -399,6 +402,13 @@ class WebToolbar(Gtk.Toolbar):
 
     def location_set_progress(self, progress):
         self._entry.set_progress_fraction(progress%1)
+
+    def show_hover_uri(self, uri):
+        if uri:
+            self._entrytext = self._entry.get_text()
+            self._entry.set_text(uri)
+        else:
+            self._entry.set_text(self._entrytext)
 
 
 class EntryTree(Gtk.TreeView):
@@ -901,6 +911,10 @@ class FeedReaderWindow(Gtk.Window):
         def progress_changed_cb(pane, progress):
             toolbar.location_set_progress(progress)
         content_pane.connect("progress-changed", progress_changed_cb)
+
+        def hover_link_changed_cb(pane, uri):
+            toolbar.show_hover_uri(uri)
+        content_pane.connect("hover-link-changed", hover_link_changed_cb)
 
         entries = EntryTree(config, feeddb)
 
