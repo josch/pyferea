@@ -111,6 +111,7 @@ Possible future work
  - build debian package
  - add hooks to load custom javascript/css for feeds
  - i18n
- - downloading
+ - downloading (only gui code missing)
  - list of unread items
  - make re-sorting fast
+ - save database in xdg compliant location

@@ -34,6 +34,7 @@ from cStringIO import StringIO
 import shelve
 import time
 from datetime import datetime
+import os, re
 
 def get_time_pretty(time):
     """
@@ -276,6 +277,53 @@ class ContentPane (Gtk.Notebook):
         def _progress_changed_cb(view, progress):
             self.emit("progress-changed", view.get_progress())
         web_view.connect("notify::progress", _progress_changed_cb)
+
+        def _mime_type_policy_decision_requested_cb(view, frame, request, mime, policy):
+            # to make downloads possible, handle policy decisions and download
+            # everything that the webview cannot show
+            if view.can_show_mime_type(mime):
+                policy.use()
+            else:
+                policy.download()
+            return True
+        web_view.connect("mime-type-policy-decision-requested", _mime_type_policy_decision_requested_cb)
+
+        def _download_requested_cb(view, download):
+            download_dir = os.path.expanduser('~/Downloads')
+            user_dirs = os.path.expanduser('~/.config/user-dirs.dirs')
+            if os.path.exists(user_dirs):
+                match = re.search('XDG_DOWNLOAD_DIR="(.*?)"', open(user_dirs).read())
+                if match:
+                    # TODO: what about $HOME_FOO or ${HOME}? how to parse that correctly?
+                    download_dir = os.path.expanduser(match.group(1).replace('$HOME', '~'))
+            if not os.path.exists(download_dir):
+                os.makedirs(download_dir)
+            # TODO: check if destination file exists
+            download.set_destination_uri("file://"+download_dir+"/"+download.get_suggested_filename())
+
+            def _status_changed_cb(download, status):
+                if download.get_status().value_name == 'WEBKIT_DOWNLOAD_STATUS_CANCELLED':
+                    print "download cancelled"
+                elif download.get_status().value_name == 'WEBKIT_DOWNLOAD_STATUS_CREATED':
+                    print "download created"
+                elif download.get_status().value_name == 'WEBKIT_DOWNLOAD_STATUS_ERROR':
+                    print "download error"
+                elif download.get_status().value_name == 'WEBKIT_DOWNLOAD_STATUS_FINISHED':
+                    print "download finished"
+                elif download.get_status().value_name == 'WEBKIT_DOWNLOAD_STATUS_STARTED':
+                    print "download started"
+            download.connect('notify::status', _status_changed_cb)
+
+            def _progress_changed_cb(download, progress):
+                print "download", download.get_progress()*100, "%", download.get_current_size(), "bytes", download.get_elapsed_time(), "seconds"
+            download.connect('notify::progress', _progress_changed_cb)
+
+            print "download total size:", download.get_total_size()
+            print "download uri:", download.get_uri()
+            print "download destination:", download_dir+"/"+download.get_suggested_filename()
+
+            return True
+        web_view.connect("download-requested", _download_requested_cb)
 
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.props.hscrollbar_policy = Gtk.PolicyType.AUTOMATIC
