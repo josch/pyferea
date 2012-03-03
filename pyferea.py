@@ -399,6 +399,7 @@ class WebToolbar(Gtk.Toolbar):
 
     def location_set_text (self, text):
         self._entry.set_text(text)
+        self._entrytext = text
 
     def location_set_progress(self, progress):
         self._entry.set_progress_fraction(progress%1)
