@@ -19,7 +19,6 @@
 # gettext
 # custom css/javascript
 # get addressbar/title/tabtitle right
-# adjust date/time correctly
 
 # no double entries for smbc
 # drag&drop doesnt create new items
@@ -33,19 +32,22 @@ from lxml import etree
 from cStringIO import StringIO
 import shelve
 import time
-from datetime import datetime
+import datetime
 import os, re
 
 def get_time_pretty(time):
     """
     return a pretty string representation of time given in unix time
     """
-    time = datetime.fromtimestamp(time)
-    diff = datetime.now() - time
+    time = datetime.datetime.fromtimestamp(time)
+    diff = datetime.datetime.now() - time
 
-    if diff.days == 0:
+    today = datetime.datetime.combine(datetime.date.today(), datetime.time())
+    yesterday = datetime.datetime.combine(datetime.date.today(), datetime.time())-datetime.timedelta(days=1)
+
+    if time > today:
         return _("Today")+" "+time.strftime("%H:%M")
-    elif diff.days == 1:
+    elif time > yesterday:
         return _("Yesterday")+" "+time.strftime("%H:%M")
     elif diff.days < 7:
         return time.strftime("%a %H:%M")
