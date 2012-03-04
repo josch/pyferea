@@ -256,7 +256,13 @@ class ContentPane (Gtk.Notebook):
             if title:
                 label.set_label(title)
             #view.execute_script(open("youtube_html5_everywhere.user.js", "r").read())
-            view.execute_script(open("ythtml5.js", "r").read())
+            for path in [".", "/usr/share/pyferea")]:
+                if not os.path.exists(path):
+                    continue
+                for f in [os.path.join(path, p) for p in os.listdir(path)]:
+                    if not f.endswith(".js"): continue
+                    if not os.path.isfile(f): continue
+                    view.execute_script(open(f, "r").read())
             """
             dom = view.get_dom_document()
             head = dom.get_head()
@@ -292,7 +298,8 @@ class ContentPane (Gtk.Notebook):
 
         def _download_requested_cb(view, download):
             download_dir = os.path.expanduser('~/Downloads')
-            user_dirs = os.path.expanduser('~/.config/user-dirs.dirs')
+            xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(os.path.expanduser('~'), '.config')
+            user_dirs = os.path.join(xdg_config_home, "user-dirs.dirs")
             if os.path.exists(user_dirs):
                 match = re.search('XDG_DOWNLOAD_DIR="(.*?)"', open(user_dirs).read())
                 if match:
@@ -909,10 +916,41 @@ class FeedReaderWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self)
 
-        feeddb = shelve.open("pyferea.db")
+        # try the following paths for pyferea.db in this order
+        xdg_data_home = os.environ.get('XDG_DATA_HOME') or os.path.join(os.path.expanduser('~'), '.local', 'share')
+        feeddb_paths = [
+            "./pyferea.db",
+            os.path.join(xdg_data_home, "pyferea", "pyferea.db"),
+        ]
+        feeddb = None
+        for path in feeddb_paths:
+            if os.path.exists(path):
+                feeddb = shelve.open(path)
+                break
+        if not feeddb:
+            print "cannot find pyferea.db in any of the following locations:"
+            for path in feeddb_paths:
+                print path
+            exit(1)
 
-        with open('feeds.yaml') as f:
-            config = yaml.load(f)
+        # try the following paths for feeds.yaml in this order
+        xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(os.path.expanduser('~'), '.config')
+        feeds_paths = [
+            "./feeds.yaml",
+            os.path.join(xdg_config_home, "pyferea", "feeds.yaml"),
+            "/usr/share/pyferea/feeds.yaml.example"
+        ]
+        conig = None
+        for path in feeds_paths:
+            if os.path.exists(path):
+                with open(path) as f:
+                    config = yaml.load(f)
+                break
+        if not config:
+            print "cannot find feeds.yaml in any of the following locations:"
+            for path in feeds_paths:
+                print path
+            exit(1)
 
         toolbar = WebToolbar()
 

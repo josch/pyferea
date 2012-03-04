@@ -103,6 +103,23 @@ A javascript that I load upon each pageload to convert youtube videos into
 their html5 versions so that the webkit plugin can render them even withoutme
 having flash.
 
+Files
+=====
+
+pyferea.db
+ - database of retrieved feeds
+ - resides in local directory or in $XDG_DATA_HOME/pyferea/
+
+feeds.yaml
+ - list of feeds urls to retrieve
+ - resides in local directory, in $XDG_CONFIG_HOME/pyferea/ or as
+   an example file as /usr/share/pyferea/feeds.yaml.example
+
+javascript
+ - all javascript files that are to be executed after page load reside in
+   $XDG_DATA_HOME/pyferea/ or in /usr/share/pyferea/ and identify themselves
+   by having the ".js" extension
+
 Possible future work
 ====================
 
@@ -114,4 +131,3 @@ Possible future work
  - downloading (only gui code missing)
  - list of unread items
  - make re-sorting fast
- - save database in xdg compliant location
