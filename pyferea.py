@@ -780,7 +780,12 @@ class FeedTree(Gtk.TreeView):
 
             feed = feedparser.parse(msg.response_body.flatten().get_data())
 
-            # TODO check if parsing succeeded
+            if feed.bozo != 0:
+                # retrieved data was no valid feed
+                error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
+                self.model.set_value(it, 2, error_icon)
+                self.update_feed_done(feedurl)
+                return
 
             entry['title'] = feed.feed.get('title')
             self.model.set_value(it, 1, markup_escape_text(entry['title']))
