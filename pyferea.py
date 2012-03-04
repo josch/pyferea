@@ -17,7 +17,6 @@
 
 #TODO
 # gettext
-# custom css/javascript
 # get addressbar/title/tabtitle right
 
 # no double entries for smbc
@@ -256,7 +255,7 @@ class ContentPane (Gtk.Notebook):
             if title:
                 label.set_label(title)
             #view.execute_script(open("youtube_html5_everywhere.user.js", "r").read())
-            for path in [".", "/usr/share/pyferea")]:
+            for path in [".", "/usr/share/pyferea"]:
                 if not os.path.exists(path):
                     continue
                 for f in [os.path.join(path, p) for p in os.listdir(path)]:
@@ -297,14 +296,19 @@ class ContentPane (Gtk.Notebook):
         web_view.connect("mime-type-policy-decision-requested", _mime_type_policy_decision_requested_cb)
 
         def _download_requested_cb(view, download):
-            download_dir = os.path.expanduser('~/Downloads')
-            xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(os.path.expanduser('~'), '.config')
-            user_dirs = os.path.join(xdg_config_home, "user-dirs.dirs")
-            if os.path.exists(user_dirs):
-                match = re.search('XDG_DOWNLOAD_DIR="(.*?)"', open(user_dirs).read())
-                if match:
-                    # TODO: what about $HOME_FOO or ${HOME}? how to parse that correctly?
-                    download_dir = os.path.expanduser(match.group(1).replace('$HOME', '~'))
+            # get download directory from $XDG_DOWNLOAD_DIR, then from user-dirs.dirs
+            # then fall back to ~/Downloads
+            download_dir = os.environ.get("XDG_DOWNLOAD_DIR")
+            if not download_dir:
+                xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(os.path.expanduser('~'), '.config')
+                user_dirs = os.path.join(xdg_config_home, "user-dirs.dirs")
+                if os.path.exists(user_dirs):
+                    match = re.search('XDG_DOWNLOAD_DIR="(.*?)"', open(user_dirs).read())
+                    if match:
+                        # TODO: what about $HOME_FOO or ${HOME}? how to parse that correctly?
+                        download_dir = os.path.expanduser(match.group(1).replace('$HOME', '~'))
+                if not download_dir:
+                    download_dir = os.path.expanduser('~/Downloads')
             if not os.path.exists(download_dir):
                 os.makedirs(download_dir)
             # TODO: check if destination file exists

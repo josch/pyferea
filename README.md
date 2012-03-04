@@ -126,7 +126,7 @@ Possible future work
 (patches welcome)
 
  - build debian package
- - add hooks to load custom javascript/css for feeds
+ - load javascript selectively and not for every page
  - i18n
  - downloading (only gui code missing)
  - list of unread items
