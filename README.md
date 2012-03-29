@@ -48,8 +48,7 @@ Bugs
 
 Pyferea as it is now is enough for my daily use but there are still some issues
 that need to be fixed: the back/forward functionality of the browser must be
-fixed (i seldomly use it), the date/time in the entry panel doesnt update
-correctly over time (i can live with it for now) and the text in the
+fixed in certain cases (i seldomly use it) and the text in the
 addressbar, title and tabtitle must be synced. I will fix that once I feel like
 it. If anybody feels inclined to do so, then patches are welcome.
 
