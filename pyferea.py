@@ -506,9 +506,9 @@ class EntryTree(Gtk.TreeView):
 
         cell = Gtk.CellRendererText()
         column1 = Gtk.TreeViewColumn("Date", cell, markup=2)
-        column1.set_sort_column_id(0)
+        #column1.set_sort_column_id(0)
         column2 = Gtk.TreeViewColumn("Headline", cell, markup=1)
-        column2.set_sort_column_id(1)
+        #column2.set_sort_column_id(1)
         self.append_column(column1)
         self.append_column(column2)
         self.set_model(self.empty_model)
@@ -543,13 +543,13 @@ class EntryTree(Gtk.TreeView):
             item2 = model.get_value(b, 0)
             items = self.feeddb[feedurl]['items']
             return -1 if items[item1]['date'] < items[item2]['date'] else 1
-        model.set_sort_func(0, compare_date)
+        #model.set_sort_func(0, compare_date)
         def compare_title(model, a, b, data):
             item1 = model.get_value(a, 0)
             item2 = model.get_value(b, 0)
             items = self.feeddb[feedurl]['items']
             return -1 if items[item1]['title'] < items[item2]['title'] else 1
-        model.set_sort_func(1, compare_title)
+        #model.set_sort_func(1, compare_title) # deactivate both sortings as it takes too long if accidentally clicked
         # this takes loooooong
         #model.set_sort_column_id(0, Gtk.SortType.DESCENDING)
         self.models[feedurl] = model
@@ -935,7 +935,8 @@ class FeedReaderWindow(Gtk.Window):
             print "cannot find pyferea.db in any of the following locations:"
             for path in feeddb_paths:
                 print path
-            exit(1)
+            print "creating new db at %s"%feeddb_paths[0]
+            feeddb = shelve.open(feeddb_paths[0])
 
         # try the following paths for feeds.yaml in this order
         xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(os.path.expanduser('~'), '.config')
