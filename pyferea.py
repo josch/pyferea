@@ -791,7 +791,15 @@ class FeedTree(Gtk.TreeView):
             if msg.response_headers.get_one('Last-Modified'):
                 entry['lastmodified'] = msg.response_headers.get_one('Last-Modified')
 
-            feed = feedparser.parse(msg.response_body.flatten().get_data())
+            try:
+                feed = feedparser.parse(msg.response_body.flatten().get_data())
+            except:
+                print "error parsing feed:"
+                print msg.response_body.flatten().get_data()
+                error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
+                self.model.set_value(it, 2, error_icon)
+                self.update_feed_done(feedurl)
+                return
 
             if feed.bozo != 0:
                 # retrieved data was no valid feed
