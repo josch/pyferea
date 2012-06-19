@@ -484,7 +484,9 @@ class EntryTree(Gtk.TreeView):
         self.feeddb = feeddb
 
         def on_cursor_changed_cb(treeview):
-            _, it = self.get_selection().get_selected()
+            selection = self.get_selection()
+            if not selection: return
+            _, it = selection.get_selected()
             if not it: return
             item = self.get_model().get_value(it, 0)
             entry = self.feeddb[self.feedurl]
@@ -584,7 +586,9 @@ class FeedTree(Gtk.TreeView):
         self.connect("button_press_event", on_button_press_event)
 
         def on_cursor_changed_cb(treeview):
-            _, it = self.get_selection().get_selected()
+            selection = self.get_selection()
+            if not selection: return
+            _, it = selection.get_selected()
             if it:
                 self.emit("feed-selected", self.model.get_value(it, 0))
         self.connect("cursor-changed", on_cursor_changed_cb)
