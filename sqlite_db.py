@@ -82,8 +82,8 @@ class SQLStorage():
         self.conn.commit()
 
     def update_feed(self, feed, values):
-        self.conn.execute("""UPDATE feeds SET title=?, favicon=?, etag=?, lastmodified=?, unread=? WHERE feed=?""",
-            (values['title'], values.get('favicon'), values.get('etag'), values.get('lastmodified'), values['unread'], feed))
+        self.conn.execute("""REPLACE INTO feeds (feed, title, favicon, etag, lastmodified, unread) VALUES (?,?,?,?,?,?)""",
+            (feed, values['title'], values.get('favicon'), values.get('etag'), values.get('lastmodified'), values['unread']))
         self.conn.commit()
 
     def set_favicon(self, feed, favicon):
