@@ -29,7 +29,7 @@ from urlparse import urlparse, urlunparse, urljoin
 import feedparser
 from lxml import etree
 from cStringIO import StringIO
-import shelve
+import sqlite_db
 import time
 import datetime
 import os, re
@@ -97,7 +97,7 @@ def markup_escape_text(text):
     """
     if not text:
         return ""
-    return GLib.markup_escape_text(text.encode('utf-8'))
+    return GLib.markup_escape_text(text)
 
 class TabLabel(Gtk.HBox):
     """A class for Tab labels"""
@@ -489,16 +489,13 @@ class EntryTree(Gtk.TreeView):
             _, it = selection.get_selected()
             if not it: return
             item = self.get_model().get_value(it, 0)
-            entry = self.feeddb[self.feedurl]
-            if entry['items'][item]['unread']:
-                title = markup_escape_text(entry['items'][item]['title'])
-                date = get_time_pretty(entry['items'][item]['date'])
+            entry = self.feeddb.get_entry(self.feedurl, item)
+            if entry['unread']:
+                title = markup_escape_text(entry['title'])
+                date = get_time_pretty(entry['date'])
                 self.get_model().set_value(it, 1, title)
                 self.get_model().set_value(it, 2, date)
-                entry['items'][item]['unread'] = False
-                entry['unread'] -= 1
-                self.feeddb[self.feedurl] = entry
-                #self.feeddb.sync() # dont sync on every unread item - makes stuff extremely slow over time
+                self.feeddb.mark_read(self.feedurl, item)
             self.emit("item-selected", self.feedurl, item)
         self.connect("cursor-changed", on_cursor_changed_cb)
 
@@ -517,11 +514,11 @@ class EntryTree(Gtk.TreeView):
         self.feedurl = None
 
         for feedurl in config:
-            if self.feeddb.get(feedurl):
+            if self.feeddb.feed_exists(feedurl):
                 self.update(feedurl)
 
     def display(self, feedurl):
-        if not feedurl or feedurl not in self.feeddb:
+        if not feedurl or not self.feeddb.feed_exists(feedurl):
             self.set_model(self.empty_model)
             self.feedurl = None
         else:
@@ -532,14 +529,13 @@ class EntryTree(Gtk.TreeView):
         model = Gtk.ListStore(GObject.TYPE_STRING, GObject.TYPE_STRING, GObject.TYPE_STRING)
         # using model.set_sort_column_id is horribly slow, so append them
         # sorted instead
-        items = sorted(self.feeddb[feedurl]['items'].iteritems(), key=lambda x: x[1]['date'], reverse=True)
-        for guid, value in items:
+        for value in self.feeddb.get_entries_all(feedurl):
             title = markup_escape_text(value.get('title', ""))
             date = get_time_pretty(value['date'])
             if value['unread']:
                 title = "<b>"+title+"</b>"
                 date = "<b>"+date+"</b>"
-            model.append([guid, title, date])
+            model.append([value['entry'], title, date])
         def compare_date(model, a, b, data):
             item1 = model.get_value(a, 0)
             item2 = model.get_value(b, 0)
@@ -609,15 +605,16 @@ class FeedTree(Gtk.TreeView):
         for category, feeds in categories.items():
             it = self.model.append(None, [None, category, folder_icon, None])
             for feedurl in feeds:
-                if self.feeddb.get(feedurl):
-                    feed_icon = self.feeddb[feedurl].get('favicon')
+                if self.feeddb.feed_exists(feedurl):
+                    feed = self.feeddb.get_feed(feedurl)
+                    feed_icon = feed.get('favicon')
                     if feed_icon:
                         feed_icon = pixbuf_new_from_file_in_memory(feed_icon, (16, 16))
                     else:
                         feed_icon = self.render_icon(Gtk.STOCK_FILE, Gtk.IconSize.MENU, None)
 
-                    label = markup_escape_text(self.feeddb[feedurl].get('title', feedurl))
-                    unread = self.feeddb[feedurl].get('unread')
+                    label = markup_escape_text(feed.get('title', feedurl))
+                    unread = feed.get('unread')
                     if unread > 0:
                         label = "<b>"+label+" (%d)"%unread+"</b>"
                 else:
@@ -656,13 +653,9 @@ class FeedTree(Gtk.TreeView):
 
     def mark_read(self, it, sync=True):
         feedurl = self.model.get_value(it, 0)
-        entry = self.feeddb.get(feedurl)
-        if not entry: return
-        entry['unread'] = 0
-        for item in entry['items'].values():
-            item['unread'] = False
-        self.model.set_value(it, 1, markup_escape_text(entry['title']))
-        self.feeddb[feedurl] = entry
+        feed = self.feeddb.get_feed(feedurl)
+        self.feeddb.mark_read_feed(feedurl)
+        self.model.set_value(it, 1, markup_escape_text(feed['title']))
         self.emit("update-feed", feedurl)
         if sync:
             self.feeddb.sync()
@@ -709,8 +702,9 @@ class FeedTree(Gtk.TreeView):
             itc = self.model.iter_children(it)
             while (itc):
                 feedurl = self.model.get_value(itc, 0)
-                title = markup_escape_text(self.feeddb[feedurl]['title'])
-                unread = self.feeddb[feedurl]['unread']
+                feed = self.feeddb.get_feed(feedurl)
+                title = markup_escape_text(feed['title'])
+                unread = feed['unread']
                 if unread > 0:
                     title = "<b>"+title+" (%d)"%unread+"</b>"
                 self.model.set_value(itc, 1, title)
@@ -758,10 +752,11 @@ class FeedTree(Gtk.TreeView):
     def update_feed(self, it):
         feedurl = self.model.get_value(it, 0)
         msg = Soup.Message.new("GET", feedurl)
-        if self.feeddb.get(feedurl) and self.feeddb[feedurl].get('etag'):
-            msg.request_headers.append('If-None-Match', self.feeddb[feedurl]['etag'])
-        if self.feeddb.get(feedurl) and self.feeddb[feedurl].get('lastmodified'):
-            msg.request_headers.append('If-Modified-Since', self.feeddb[feedurl]['lastmodified'])
+        feed = self.feeddb.get_feed(feedurl)
+        if feed.get('etag'):
+            msg.request_headers.append('If-None-Match', feed['etag'])
+        if feed.get('lastmodified'):
+            msg.request_headers.append('If-Modified-Since', feed['lastmodified'])
 
         def complete_cb(session, msg, it):
             if msg.status_code not in [200, 304]:
@@ -771,7 +766,7 @@ class FeedTree(Gtk.TreeView):
                 return
 
             # get existing feedentry or create new one
-            entry = self.feeddb.get(feedurl, dict())
+            entry = self.feeddb.get_feed(feedurl)
 
             if entry.get('favicon'):
                 icon = pixbuf_new_from_file_in_memory(entry['favicon'], (16, 16))
@@ -796,7 +791,7 @@ class FeedTree(Gtk.TreeView):
                 entry['lastmodified'] = msg.response_headers.get_one('Last-Modified')
 
             try:
-                feed = feedparser.parse(msg.response_body.flatten().get_data())
+                feedparse = feedparser.parse(msg.response_body.flatten().get_data())
             except:
                 print "error parsing feed:"
                 print msg.response_body.flatten().get_data()
@@ -805,14 +800,14 @@ class FeedTree(Gtk.TreeView):
                 self.update_feed_done(feedurl)
                 return
 
-            if feed.bozo != 0:
+            if feedparse.bozo != 0:
                 # retrieved data was no valid feed
                 error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
                 self.model.set_value(it, 2, error_icon)
                 self.update_feed_done(feedurl)
                 return
 
-            entry['title'] = feed.feed.get('title')
+            entry['title'] = feedparse.feed.get('title')
             self.model.set_value(it, 1, markup_escape_text(entry['title']))
 
             # assumption: favicon never changes
@@ -820,14 +815,14 @@ class FeedTree(Gtk.TreeView):
                 self.updating.add(feedurl+"_icon")
                 self.update_icon(it, feedurl)
 
-            for item in feed.entries:
+            for item in feedparse.entries:
                 # use guid with fallback to link as identifier
                 itemid = item.get("id", item.get("link"))
                 if not itemid:
                     # TODO: display error "cannot identify feeditems"
                     break
 
-                if entry['items'].has_key(itemid):
+                if self.feeddb.entry_exists(feedurl, itemid):
                     # already exists
                     continue
 
@@ -836,7 +831,7 @@ class FeedTree(Gtk.TreeView):
                     'title': item.get('title'),
                     'date': item.get('published_parsed'),
                     'content': item.get('content'),
-                    'categories': [cat for _, cat in item.get('categories', [])] or None,
+                    'categories': ','.join([cat for _, cat in item.get('categories', [])]) or "",
                     'unread': True
                 }
 
@@ -858,14 +853,14 @@ class FeedTree(Gtk.TreeView):
                 else:
                     new_item['content'] = ""
 
-                entry['items'][itemid] = new_item
+                self.feeddb.add_entry(feedurl, itemid, new_item)
 
                 entry['unread'] += 1
 
             if entry['unread'] > 0:
                 self.model.set_value(it, 1, '<b>'+markup_escape_text(entry['title'])+" (%d)"%entry['unread']+'</b>')
 
-            self.feeddb[feedurl] = entry
+            self.feeddb.update_feed(feedurl, entry)
 
             self.emit("update-feed", feedurl)
 
@@ -894,9 +889,7 @@ class FeedTree(Gtk.TreeView):
                 data = msg.response_body.flatten().get_data()
                 if len(data):
                     icon = pixbuf_new_from_file_in_memory(data, (16, 16))
-                    entry = self.feeddb[feedurl]
-                    entry['favicon'] = data
-                    self.feeddb[feedurl] = entry
+                    self.feeddb.set_favicon(feedurl, data)
                     self.model.set_value(it, 2, icon)
                     self.update_feed_done(feedurl)
                 else:
@@ -920,9 +913,7 @@ class FeedTree(Gtk.TreeView):
                     icon = self.render_icon(Gtk.STOCK_FILE, Gtk.IconSize.MENU, None)
             else:
                 icon = self.render_icon(Gtk.STOCK_FILE, Gtk.IconSize.MENU, None)
-            entry = self.feeddb[feedurl]
-            entry['favicon'] = data
-            self.feeddb[feedurl] = entry
+            self.feeddb.set_favicon(feedurl, data)
             self.model.set_value(it, 2, icon)
             self.update_feed_done(feedurl+"_icon")
         self.session.queue_message(msg, complete_cb, it)
@@ -932,23 +923,23 @@ class FeedReaderWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self)
 
-        # try the following paths for pyferea.db in this order
+        # try the following paths for pyferea.sqlite in this order
         xdg_data_home = os.environ.get('XDG_DATA_HOME') or os.path.join(os.path.expanduser('~'), '.local', 'share')
         feeddb_paths = [
-            "./pyferea.db",
-            os.path.join(xdg_data_home, "pyferea", "pyferea.db"),
+            "./pyferea.sqlite",
+            os.path.join(xdg_data_home, "pyferea", "pyferea.sqlite"),
         ]
         feeddb = None
         for path in feeddb_paths:
             if os.path.exists(path):
-                feeddb = shelve.open(path)
+                feeddb = sqlite_db.SQLStorage(path)
                 break
         if not feeddb:
-            print "cannot find pyferea.db in any of the following locations:"
+            print "cannot find pyferea.sqlite in any of the following locations:"
             for path in feeddb_paths:
                 print path
             print "creating new db at %s"%feeddb_paths[0]
-            feeddb = shelve.open(feeddb_paths[0])
+            feeddb = sqlite_db.SQLStorage(feeddb_paths[0])
 
         # try the following paths for feeds.yaml in this order
         xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.join(os.path.expanduser('~'), '.config')
@@ -1030,7 +1021,7 @@ class FeedReaderWindow(Gtk.Window):
         entries = EntryTree(config, feeddb)
 
         def item_selected_cb(entry, feedurl, item):
-            item = feeddb[feedurl]['items'][item]
+            item = feeddb.get_entry(feedurl, item)
             if config[feedurl]['loadlink']:
                 content_pane.load_uri(item['link'])
             else:
