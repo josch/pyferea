@@ -54,18 +54,27 @@ class SQLStorage():
         dbcreate(self.conn)
 
     def get_feed(self, feed):
-        return dict(zip(('title', 'favicon', 'etag', 'lastmodified', 'unread'),
-            self.conn.execute("""SELECT title, favicon, etag, lastmodified, unread FROM feeds WHERE feed=?""", (feed,)).fetchone()))
+        result = self.conn.execute("""SELECT title, favicon, etag, lastmodified, unread FROM feeds WHERE feed=?""", (feed,)).fetchone()
+        if result:
+            return dict(zip(('title', 'favicon', 'etag', 'lastmodified', 'unread'), result))
+        else:
+            return dict()
 
     def get_entry(self, feed, entry):
-        return dict(zip(('title', 'content', 'link', 'date', 'unread', 'categories'),
-                  self.conn.execute("""SELECT title, content, link, date, unread, categories FROM entries WHERE feed=? AND entry=?""", (feed, entry)).fetchone()))
+        result = self.conn.execute("""SELECT title, content, link, date, unread, categories FROM entries WHERE feed=? AND entry=?""", (feed, entry)).fetchone()
+        if result:
+            return dict(zip(('title', 'content', 'link', 'date', 'unread', 'categories'), result))
+        else:
+            return dict()
 
     def get_entries_all(self, feed):
-        return [dict(zip(('entry', 'title', 'date', 'unread'), content))
-                for content in self.conn.execute("""
-                    SELECT entry, title, date, unread FROM entries WHERE feed=? ORDER BY date DESC
-                """, (feed,)).fetchall()]
+        result = self.conn.execute(
+            """SELECT entry, title, date, unread FROM entries WHERE feed=? ORDER BY date DESC""",
+            (feed,)).fetchall()
+        if result:
+            return [dict(zip(('entry', 'title', 'date', 'unread'), c)) for c in result]
+        else:
+            return list()
 
     def add_entry(self, feed, entry, values):
         self.conn.execute("""REPLACE INTO entries (feed, entry, title, content, link, date, unread, categories) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -74,7 +83,7 @@ class SQLStorage():
 
     def update_feed(self, feed, values):
         self.conn.execute("""UPDATE feeds SET title=?, favicon=?, etag=?, lastmodified=?, unread=? WHERE feed=?""",
-            (values['title'], values['favicon'], values['etag'], values['lastmodified'], values['unread'], feed))
+            (values['title'], values.get('favicon'), values.get('etag'), values.get('lastmodified'), values['unread'], feed))
         self.conn.commit()
 
     def set_favicon(self, feed, favicon):
@@ -90,12 +99,6 @@ class SQLStorage():
         self.conn.execute("""UPDATE entries SET unread=0 WHERE unread=1""")
         self.conn.execute("""UPDATE feeds set unread=0 WHERE feed=?""", (feed,))
         self.conn.commit()
-
-    def feed_exists(self, feed):
-        return self.conn.execute("""SELECT feed FROM feeds WHERE feed=?""", (feed,)).fetchone() is not None
-
-    def entry_exists(self, feed, entry):
-        return self.conn.execute("""SELECT feed FROM entries WHERE feed=? AND entry=?""", (feed,entry)).fetchone() is not None
 
     def close(self):
         self.conn.close()

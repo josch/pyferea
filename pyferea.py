@@ -514,11 +514,11 @@ class EntryTree(Gtk.TreeView):
         self.feedurl = None
 
         for feedurl in config:
-            if self.feeddb.feed_exists(feedurl):
+            if self.feeddb.get_feed(feedurl):
                 self.update(feedurl)
 
     def display(self, feedurl):
-        if not feedurl or not self.feeddb.feed_exists(feedurl):
+        if not feedurl or not self.feeddb.get_feed(feedurl):
             self.set_model(self.empty_model)
             self.feedurl = None
         else:
@@ -605,8 +605,8 @@ class FeedTree(Gtk.TreeView):
         for category, feeds in categories.items():
             it = self.model.append(None, [None, category, folder_icon, None])
             for feedurl in feeds:
-                if self.feeddb.feed_exists(feedurl):
-                    feed = self.feeddb.get_feed(feedurl)
+                feed = self.feeddb.get_feed(feedurl)
+                if feed:
                     feed_icon = feed.get('favicon')
                     if feed_icon:
                         feed_icon = pixbuf_new_from_file_in_memory(feed_icon, (16, 16))
@@ -822,7 +822,7 @@ class FeedTree(Gtk.TreeView):
                     # TODO: display error "cannot identify feeditems"
                     break
 
-                if self.feeddb.entry_exists(feedurl, itemid):
+                if self.feeddb.get_entry(feedurl, itemid):
                     # already exists
                     continue
 
