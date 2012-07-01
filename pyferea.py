@@ -795,7 +795,7 @@ class FeedTree(Gtk.TreeView):
             try:
                 feedparse = feedparser.parse(msg.response_body.flatten().get_data())
             except:
-                print "error parsing feed:"
+                print "error parsing feed:", feedurl
                 print msg.response_body.flatten().get_data().encode('base64_codec')
                 self.model.set_value(it, 2, error_icon)
                 self.update_feed_done(feedurl)
