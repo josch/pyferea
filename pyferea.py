@@ -645,6 +645,7 @@ class FeedTree(Gtk.TreeView):
         self.show()
 
         self.session = Soup.SessionAsync.new()
+        self.session.add_feature(Soup.ContentDecoder())
 
     def mark_read_all(self):
         it = self.model.get_iter_first()
@@ -1133,8 +1134,10 @@ class FeedReaderWindow(Gtk.Window):
 
 if __name__ == "__main__":
     jar = Soup.CookieJarText.new("cookies.txt", False)
+    cd = Soup.ContentDecoder()
     session = WebKit.get_default_session()
     session.add_feature(jar)
+    session.add_feature(cd)
     session.set_property("timeout", 60)
     feedreader = FeedReaderWindow()
     Gtk.main()
