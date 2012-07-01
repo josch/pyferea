@@ -651,19 +651,16 @@ class FeedTree(Gtk.TreeView):
         while (it):
             itc = self.model.iter_children(it)
             while (itc):
-                self.mark_read(itc, sync=False)
+                self.mark_read(itc)
                 itc = self.model.iter_next(itc)
             it = self.model.iter_next(it)
-        self.feeddb.sync()
 
-    def mark_read(self, it, sync=True):
+    def mark_read(self, it):
         feedurl = self.model.get_value(it, 0)
         feed = self.feeddb.get_feed(feedurl)
         self.feeddb.mark_read_feed(feedurl)
         self.model.set_value(it, 1, markup_escape_text(feed['title']))
         self.emit("update-feed", feedurl)
-        if sync:
-            self.feeddb.sync()
 
     def disable_context_update(self):
         it = self.model.get_iter_first()
@@ -690,7 +687,7 @@ class FeedTree(Gtk.TreeView):
         mark_item = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_APPLY, None)
         mark_item.set_label(_("Mark As Read"))
         def on_mark_item_activate_cb(menuitem):
-            self.mark_read(it, sync=True)
+            self.mark_read(it)
             self.emit("update-feed", feedurl)
         mark_item.connect("activate", on_mark_item_activate_cb)
 
@@ -741,7 +738,6 @@ class FeedTree(Gtk.TreeView):
     def update_feed_done(self, feedurl):
         self.updating.remove(feedurl)
         if self.updating: return
-        self.feeddb.sync()
 
         # enable updating via context menu
         it = self.model.get_iter_first()

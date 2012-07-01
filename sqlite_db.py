@@ -103,8 +103,5 @@ class SQLStorage():
     def close(self):
         self.conn.close()
 
-    def sync(self):
-        pass
-
 if __name__ == "__main__":
     convert("pyferea.sqlite")
