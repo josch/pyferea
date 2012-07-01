@@ -61,12 +61,17 @@ def pixbuf_new_from_file_in_memory(data, size=None):
     return a pixbuf of imagedata given by data
     optionally resize image to width/height tuple given by size
     """
-    loader = GdkPixbuf.PixbufLoader()
-    if size:
-        loader.set_size(*size)
-    loader.write(data)
-    loader.close()
-    return loader.get_pixbuf()
+    try:
+        loader = GdkPixbuf.PixbufLoader()
+        if size:
+            loader.set_size(*size)
+        loader.write(data)
+        loader.close()
+        return loader.get_pixbuf()
+    except:
+        print "cannot load icon"
+        print data.encode('base64_codec')
+        return None
 
 def find_shortcut_icon_link_in_html(data):
     """
@@ -609,7 +614,7 @@ class FeedTree(Gtk.TreeView):
                 if feed:
                     feed_icon = feed.get('favicon')
                     if feed_icon:
-                        feed_icon = pixbuf_new_from_file_in_memory(feed_icon, (16, 16))
+                        feed_icon = pixbuf_new_from_file_in_memory(feed_icon, (16, 16)) or error_icon
                     else:
                         feed_icon = self.render_icon(Gtk.STOCK_FILE, Gtk.IconSize.MENU, None)
 
@@ -750,6 +755,7 @@ class FeedTree(Gtk.TreeView):
         self.emit("refresh-complete")
 
     def update_feed(self, it):
+        error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
         feedurl = self.model.get_value(it, 0)
         msg = Soup.Message.new("GET", feedurl)
         feed = self.feeddb.get_feed(feedurl)
@@ -760,7 +766,6 @@ class FeedTree(Gtk.TreeView):
 
         def complete_cb(session, msg, it):
             if msg.status_code not in [200, 304]:
-                error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
                 self.model.set_value(it, 2, error_icon)
                 self.update_feed_done(feedurl)
                 return
@@ -769,7 +774,7 @@ class FeedTree(Gtk.TreeView):
             entry = self.feeddb.get_feed(feedurl)
 
             if entry.get('favicon'):
-                icon = pixbuf_new_from_file_in_memory(entry['favicon'], (16, 16))
+                icon = pixbuf_new_from_file_in_memory(entry['favicon'], (16, 16)) or error_icon
             else:
                 icon = self.render_icon(Gtk.STOCK_FILE, Gtk.IconSize.MENU, None)
             self.model.set_value(it, 2, icon)
@@ -794,15 +799,13 @@ class FeedTree(Gtk.TreeView):
                 feedparse = feedparser.parse(msg.response_body.flatten().get_data())
             except:
                 print "error parsing feed:"
-                print msg.response_body.flatten().get_data()
-                error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
+                print msg.response_body.flatten().get_data().encode('base64_codec')
                 self.model.set_value(it, 2, error_icon)
                 self.update_feed_done(feedurl)
                 return
 
             if feedparse.bozo != 0:
                 # retrieved data was no valid feed
-                error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
                 self.model.set_value(it, 2, error_icon)
                 self.update_feed_done(feedurl)
                 return
@@ -883,12 +886,13 @@ class FeedTree(Gtk.TreeView):
 
     # get shortcut icon from link rel
     def update_icon_link(self, it, feedurl, url):
+        error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
         msg = Soup.Message.new("GET", url)
         def complete_cb(session, msg, it):
             if msg.status_code == 200:
                 data = msg.response_body.flatten().get_data()
                 if len(data):
-                    icon = pixbuf_new_from_file_in_memory(data, (16, 16))
+                    icon = pixbuf_new_from_file_in_memory(data, (16, 16)) or error_icon
                     self.feeddb.set_favicon(feedurl, data)
                     self.model.set_value(it, 2, icon)
                     self.update_feed_done(feedurl)
@@ -900,6 +904,7 @@ class FeedTree(Gtk.TreeView):
 
     # get /favicon.ico
     def update_icon_favicon(self, it, feedurl):
+        error_icon = self.render_icon(Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.MENU, None)
         url = urlparse(feedurl)
         url = urlunparse((url.scheme, url.netloc, 'favicon.ico', '', '', ''))
         msg = Soup.Message.new("GET", url)
@@ -908,7 +913,7 @@ class FeedTree(Gtk.TreeView):
             if msg.status_code == 200:
                 data = msg.response_body.flatten().get_data()
                 if len(data):
-                    icon = pixbuf_new_from_file_in_memory(data, (16, 16))
+                    icon = pixbuf_new_from_file_in_memory(data, (16, 16)) or error_icon
                 else:
                     icon = self.render_icon(Gtk.STOCK_FILE, Gtk.IconSize.MENU, None)
             else:
