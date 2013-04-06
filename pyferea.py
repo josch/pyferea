@@ -179,12 +179,12 @@ class ContentPane (Gtk.Notebook):
         view = child.get_child()
         view.load_uri(text)
 
-    def load_string (self, text):
+    def load_string (self, text, baseuri):
         """load the given uri in the current web view"""
         #child = self.get_nth_page(self.get_current_page())
         child = self.get_nth_page(0);
         view = child.get_child()
-        view.load_string(text, "text/html", "utf-8", "")
+        view.load_string(text, "text/html", "utf-8", baseuri)
 
     def back(self):
         child = self.get_nth_page(self.get_current_page())
@@ -1031,7 +1031,7 @@ class FeedReaderWindow(Gtk.Window):
                     content_string = "<h1>%s</h1><p>%s</p>"%(item['title'], ', '.join(item['categories']))
                 else:
                     content_string = "<h1>%s</h1>"%item['title']
-                content_pane.load_string(content_string+item['content'])
+                content_pane.load_string(content_string+item['content'], item['link'])
                 toolbar.location_set_text(item['link'])
                 self.set_title(_("PyFeRea - %s")%item['title'])
             feedtree.update_view_all()
