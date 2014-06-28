@@ -102,7 +102,10 @@ def markup_escape_text(text):
     """
     if not text:
         return ""
-    return GLib.markup_escape_text(text)
+    try:
+        return GLib.markup_escape_text(text)
+    except UnicodeEncodeError:
+        return "UnicodeEncodeError"
 
 class TabLabel(Gtk.HBox):
     """A class for Tab labels"""
@@ -135,8 +138,8 @@ class TabLabel(Gtk.HBox):
         self.pack_start(self.label, True, True, 0)
         self.pack_start(close_button, False, False, 0)
 
-        self.set_data("label", self.label)
-        self.set_data("close-button", close_button)
+        #self.set_data("label", self.label)
+        #self.set_data("close-button", close_button)
 
         def tab_label_style_set_cb (tab_label, style):
             context = tab_label.get_pango_context()
@@ -714,6 +717,23 @@ class FeedTree(Gtk.TreeView):
                 itc = self.model.iter_next(itc)
             it = self.model.iter_next(it)
 
+    def update_view(self, feedurl):
+        it = self.model.get_iter_first()
+        feed_iter = None
+        while (it) and not feed_iter:
+            itc = self.model.iter_children(it)
+            while (itc) and not feed_iter:
+                if self.model.get_value(itc, 0) == feedurl:
+                    feed_iter = itc
+                itc = self.model.iter_next(itc)
+            it = self.model.iter_next(it)
+        feed = self.feeddb.get_feed(feedurl)
+        title = markup_escape_text(feed['title'])
+        unread = feed['unread']
+        if unread > 0:
+            title = "<b>"+title+" (%d)"%unread+"</b>"
+        self.model.set_value(feed_iter, 1, title)
+
     def update_feed_all(self):
         self.emit("refresh-begin")
 
@@ -1034,7 +1054,7 @@ class FeedReaderWindow(Gtk.Window):
                 content_pane.load_string(content_string+item['content'], item['link'])
                 toolbar.location_set_text(item['link'])
                 self.set_title(_("PyFeRea - %s")%item['title'])
-            feedtree.update_view_all()
+            feedtree.update_view(feedurl)
         entries.connect("item-selected", item_selected_cb)
 
         feedtree = FeedTree(config, feeddb)
@@ -1059,6 +1079,8 @@ class FeedReaderWindow(Gtk.Window):
         def timeout_cb(foo):
             if feedtree.updating: return True
             feedtree.update_feed_all()
+            #from meliae import scanner
+            #scanner.dump_all_objects('filename.json')
             return True
         GLib.timeout_add_seconds(3600, timeout_cb, None)
 

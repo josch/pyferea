@@ -54,6 +54,7 @@ class SQLStorage():
         dbcreate(self.conn)
 
     def get_feed(self, feed):
+        print "get_feed"
         result = self.conn.execute("""SELECT title, favicon, etag, lastmodified, unread FROM feeds WHERE feed=?""", (feed,)).fetchone()
         if result:
             return dict(zip(('title', 'favicon', 'etag', 'lastmodified', 'unread'), result))
@@ -61,6 +62,7 @@ class SQLStorage():
             return dict()
 
     def get_entry(self, feed, entry):
+        print "get_entry"
         result = self.conn.execute("""SELECT title, content, link, date, unread, categories FROM entries WHERE feed=? AND entry=?""", (feed, entry)).fetchone()
         if result:
             return dict(zip(('title', 'content', 'link', 'date', 'unread', 'categories'), result))
@@ -68,6 +70,7 @@ class SQLStorage():
             return dict()
 
     def get_entries_all(self, feed):
+        print "get_entries_all"
         result = self.conn.execute(
             """SELECT entry, title, date, unread FROM entries WHERE feed=? ORDER BY date DESC""",
             (feed,)).fetchall()
@@ -77,25 +80,30 @@ class SQLStorage():
             return list()
 
     def add_entry(self, feed, entry, values):
+        print "add_entry"
         self.conn.execute("""REPLACE INTO entries (feed, entry, title, content, link, date, unread, categories) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (feed, entry, values['title'], values['content'], values['link'], values['date'], values['unread'], values['categories']))
         self.conn.commit()
 
     def update_feed(self, feed, values):
+        print "update_feed"
         self.conn.execute("""REPLACE INTO feeds (feed, title, favicon, etag, lastmodified, unread) VALUES (?,?,?,?,?,?)""",
             (feed, values['title'], values.get('favicon'), values.get('etag'), values.get('lastmodified'), values['unread']))
         self.conn.commit()
 
     def set_favicon(self, feed, favicon):
+        print "set_favicon"
         self.conn.execute("""UPDATE feeds SET favicon=? WHERE feed=?""", (favicon, feed))
         self.conn.commit()
 
     def mark_read(self, feed, entry):
+        print "mark_read"
         self.conn.execute("""UPDATE entries SET unread=0 WHERE feed=? AND entry=?""", (feed, entry))
         self.conn.execute("""UPDATE feeds SET unread=unread-1 WHERE feed=?""", (feed,))
         self.conn.commit()
 
     def mark_read_feed(self, feed):
+        print "mark_read_feed"
         self.conn.execute("""UPDATE entries SET unread=0 WHERE unread=1""")
         self.conn.execute("""UPDATE feeds set unread=0 WHERE feed=?""", (feed,))
         self.conn.commit()
